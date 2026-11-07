@@ -136,6 +136,22 @@ function runGeneratorTests(h, api, fx) {
     }
   });
 
+  h.test('策略组顺序：宝武 / Sun直连 / Sun代理 紧跟「默认代理」之后', () => {
+    const out = api.main(fx.minimalSubscription());
+    const names = out['proxy-groups'].map((g) => g.name);
+    const defIdx = names.indexOf('默认代理');
+    h.assert(defIdx !== -1, '应存在「默认代理」组');
+    h.assertDeep(names.slice(defIdx + 1, defIdx + 4), ['宝武', 'Sun直连', 'Sun代理'], '三个分流组应紧跟「默认代理」');
+    // GLOBAL 成员顺序与 proxy-groups 顺序一致
+    const global = out['proxy-groups'].find((g) => g.name === 'GLOBAL');
+    const gDefIdx = global.proxies.indexOf('默认代理');
+    h.assertDeep(
+      global.proxies.slice(gDefIdx + 1, gDefIdx + 4),
+      ['宝武', 'Sun直连', 'Sun代理'],
+      'GLOBAL 中三个分流组也应紧跟「默认代理」',
+    );
+  });
+
   h.test('直连侧策略组含「直连」并默认选中，代理侧组不含「直连」', () => {
     const groups = api.main(fx.minimalSubscription())['proxy-groups'];
     const byName = (name) => groups.find((g) => g.name === name);
