@@ -35,6 +35,9 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v6
+        with:
+          # 需要完整的远端引用：推送被拒后要 reset 到最新 origin 再重新生成
+          fetch-depth: 0
 
       - name: setup Node.js
         uses: actions/setup-node@v6
@@ -44,28 +47,45 @@ jobs:
       - name: install tools
         run: npm install -g prettier
 
-      # 拉取 resunne/sing-box-rules 的 baowu / sun-direct / sun-proxy 规则，
-      # 转换成 mihomo 规则并写入 Script/mihomoScript.js 的生成区块
-      - name: generate sing-box rules
-        run: node Tools/generate-singbox-rules.js
-
-      - name: format files
-        run: |
-          git ls-files -z '*.js' '*.yml' '*.yaml' | xargs -0 -r prettier --write
-
-      - name: commit and push changes
+      # 生成 + 格式化的结果完全可由「最新远端 + 生成器 + prettier」复现，
+      # 因此推送被拒时不做 rebase（生成区块几乎必然冲突），而是硬同步到最新 origin 后整轮重跑。
+      - name: generate, format, commit and push changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add .
+          BRANCH="${GITHUB_REF_NAME}"
 
-          if git diff --cached --quiet; then
-            echo "no changes to commit"
-          else
+          for attempt in 1 2 3 4 5; do
+            echo "::group::generate / format / commit / push（第 ${attempt} 次）"
+
+            node Tools/generate-singbox-rules.js
+            git ls-files -z '*.js' '*.yml' '*.yaml' | xargs -0 -r prettier --write
+
+            git add -A
+
+            if git diff --cached --quiet; then
+              echo "no changes to commit"
+              echo "::endgroup::"
+              exit 0
+            fi
+
             git commit -m "chore: auto format & sync sing-box rules"
-            git push
-          fi
+
+            if git push origin "HEAD:${BRANCH}"; then
+              echo "::endgroup::"
+              exit 0
+            fi
+
+            echo "::endgroup::"
+            echo "::warning::推送被拒（远端有新提交），同步到 origin/${BRANCH} 后重新生成"
+            git rebase --abort 2>/dev/null || true
+            git fetch origin "${BRANCH}"
+            git reset --hard "origin/${BRANCH}"
+          done
+
+          echo "::error::连续 5 次推送被拒，放弃本次自动提交（请检查是否有其它高频提交源）"
+          exit 1
 
   test:
     needs: format
