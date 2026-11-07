@@ -5,6 +5,7 @@ const { Harness } = require('./lib/harness');
 const fx = require('./lib/fixtures');
 const { runUnitTests } = require('./suites/unit');
 const { runIntegrationTests } = require('./suites/integration');
+const { runGeneratorTests } = require('./suites/generator');
 const { runES2020Checks } = require('./lib/es2020-check');
 const { runQuickJSChecks } = require('./lib/quickjs-check');
 const { SCRIPTS } = require('./lib/scripts');
@@ -52,6 +53,8 @@ async function main() {
 
       runUnitTests(h, api);
       runIntegrationTests(h, api, fx, loadScript, script.file);
+      // 生成区块与 sing-box-rules 注入只与全量版脚本相关
+      if (script.file === 'Script/mihomoScript.js') runGeneratorTests(h, api, fx);
       printDemo(api, script.label, script.meta);
 
       const s = h.summary();

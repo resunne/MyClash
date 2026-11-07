@@ -18,15 +18,16 @@
 
 ## 0. 快速索引
 
-| 项                               | 位置 / 规则                                                                                                                                                                                                                                                |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 原始位图参考                     | `Icons/png/<Name>.png`                                                                                                                                                                                                                                     |
-| 统一化矢量（对外提供的就是这套） | `Icons/svg/<Name>.svg`                                                                                                                                                                                                                                     |
-| 命名                             | PascalCase、无下划线/连字符；png 与 svg **同名一一对应**（当前 40 对）                                                                                                                                                                                     |
-| 引用格式                         | `https://fastly.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/<Name>.svg`；**JS 脚本里前缀已提为 `iconBaseUrl`**，写成 `` `${iconBaseUrl}<Name>.svg` ``；YAML 不支持变量，仍写全量                                                                       |
-| 引用位置                         | `Script/mihomoScript.js`（43）、`Script/Script.js`（24）、`Config/mihomoConfig.yaml`（36）、`Config/mihomoConfigLite.yaml`（18）（共 121 处）                                                                                                              |
-| 规则集引用                       | 脚本里已提为 `const ruleSetBaseUrl`（`…/gh/appshubcc/bett-rules@meta/geo/`），写成 `` `${ruleSetBaseUrl}geosite/<name>.mrs` ``；`path-in-bundle` 是包内本地路径，与之无关；当前所有规则集都走这个前缀，无第三方全量 URL 例外 |
-| 回归测试                         | `node Test/run-tests.js`（改过脚本必跑，当前 198 项；含 ES2020 语法检查与 QuickJS 实跑 `main()`）                                                                                                                                                          |
+| 项                               | 位置 / 规则                                                                                                                                                                                                                                |
+|----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 原始位图参考                     | `Icons/png/<Name>.png`                                                                                                                                                                                                                     |
+| 统一化矢量（对外提供的就是这套） | `Icons/svg/<Name>.svg`                                                                                                                                                                                                                     |
+| 命名                             | PascalCase、无下划线/连字符；png 与 svg **同名一一对应**（当前 40 对）                                                                                                                                                                     |
+| 引用格式                         | `https://fastly.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/<Name>.svg`；**JS 脚本里前缀已提为 `iconBaseUrl`**，写成 `` `${iconBaseUrl}<Name>.svg` ``；YAML 不支持变量，仍写全量                                                       |
+| 引用位置                         | `Script/mihomoScript.js`（43）、`Script/Script.js`（24）、`Config/mihomoConfig.yaml`（36）、`Config/mihomoConfigLite.yaml`（18）（共 121 处）                                                                                              |
+| 规则集引用                       | 脚本里已提为 `const ruleSetBaseUrl`（`…/gh/appshubcc/bett-rules@meta/geo/`），写成 `` `${ruleSetBaseUrl}geosite/<name>.mrs` ``；`path-in-bundle` 是包内本地路径，与之无关；当前所有规则集都走这个前缀，无第三方全量 URL 例外               |
+| sing-box-rules 生成规则          | `Tools/generate-singbox-rules.js` 拉取 `resunne/sing-box-rules` 的 `baowu` / `sun-direct` / `sun-proxy`，写进 `Script/mihomoScript.js` 的 `BEGIN/END GENERATED: sing-box-rules` 区块；**区块内勿手改**，改规则改源仓库或生成器（详见 §10） |
+| 回归测试                         | `node Test/run-tests.js`（改过脚本必跑，当前 195 项；含 ES2020 语法检查与 QuickJS 实跑 `main()`）                                                                                                                                          |
 
 ---
 
@@ -855,3 +856,34 @@ Start-Process -FilePath "<python.exe>" -ArgumentList '-m','http.server','8765','
 `AdBlock, Airport, America, Apple, Auto, Available, Bitcoin, Bypass, OpenAI, China, EHentai, Emby, Fcm, GitHub, Global, Google, Home, HongKong, Japan, Line, Meta, Microsoft, Netflix, PayPal, Patreon, PikPak, Proxy, RoundRobin, Server, Singapore, Spotify, Stack, Static, Steam, Taiwan, Telegram, TikTok, Twitter, WorldMap, YouTube`
 
 每个文件里都已烘焙好 `translate(tx ty) scale(s)`，需要复现规则时直接读该文件的 `transform` 即可。
+
+---
+
+## 10. sing-box-rules 生成规则（`Tools/generate-singbox-rules.js`）
+
+把 [resunne/sing-box-rules](https://github.com/resunne/sing-box-rules) 的规则合入全量版脚本，避免手工搬运。
+
+- **数据源与策略**（`SOURCES`，改名 / 增删都在这里）：`baowu.json` → 直连、`sun-direct.json` → 直连、`sun-proxy.json` → 默认代理。
+- **生成区块**：`Script/mihomoScript.js` 里 `// ===== BEGIN GENERATED: sing-box-rules =====` 到
+  `// ===== END GENERATED: sing-box-rules =====` 之间，内容是 `singBoxRuleSets`（按源分组）以及 `singBoxDirectRules` /
+  `singBoxProxyRules` 两个扁平数组。**这段永远由生成器重写，不要手改**；要改规则请改源仓库，要改映射请改 `FIELD_CONVERTERS`。
+- **规则链位置**（`main()`）：`prefixRules` 之后插 `singBoxDirectRules`（早于 QUIC 屏蔽与兜底 IP 规则）；`functionalRules` 之后插
+  `singBoxProxyRules`（早于 `RULE-SET,geolocation-!cn` 与 `MATCH`）—— 域名精确规则优先于宽泛的 `geolocation-!cn`。
+- **字段映射**：`domain`→`DOMAIN`、`domain_suffix`→`DOMAIN-SUFFIX`（去前导点、小写）、`domain_keyword`→`DOMAIN-KEYWORD`、
+  `domain_regex`→`DOMAIN-REGEX`、`ip_cidr`→`IP-CIDR,…no-resolve`、`source_ip_cidr`→`SRC-IP-CIDR`、`process_name`→
+  `PROCESS-NAME`、`port`→`DST-PORT`、`network`→`NETWORK`。**遇到无法表达为 mihomo 规则的字段（如 `invert` / `query_type`
+  ）直接抛错**，宁可 CI 失败也不静默丢规则 —— 上游新增字段时先来这里补映射。
+- **命令**：
+
+```bash
+node Tools/generate-singbox-rules.js                                  # 从 GitHub raw 拉取并写回脚本
+node Tools/generate-singbox-rules.js --source-dir ../sing-box-rules   # 用本地副本（离线 / 调试）
+node Tools/generate-singbox-rules.js --check                          # 只校验，不一致退出码 1
+```
+
+- **CI**：`.github/workflows/format_and_test.yaml` 的 `format` 任务在 prettier 之前跑生成器，随格式化一起提交；`test` 任务用
+  `--check` 校验新鲜度（`continue-on-error`，只发 warning，不让上游改动卡住 PR）。
+- **格式**：生成器按 prettier 规则自行排版（含 CJK 宽度按 2 列计的 120 列判断），生成区块经 `prettier --write` 后**零差异**
+  ；改生成器排版逻辑后请重新核对这一点。
+- **测试**：`Test/suites/generator.js` 覆盖转换器映射 / 报错、区块与数据源一致（仅当本地存在 `../sing-box-rules` 时比对），以及
+  `main()` 规则链中的注入位置。

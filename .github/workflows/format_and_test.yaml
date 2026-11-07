@@ -5,6 +5,7 @@ on:
     branches: ['main']
     paths:
       - 'Script/*'
+      - 'Tools/*'
       - 'Test/**'
       - '**/*.yaml'
       - '**/*.yml'
@@ -12,6 +13,7 @@ on:
   pull_request:
     paths:
       - 'Script/*'
+      - 'Tools/*'
       - 'Test/**'
       - '**/*.yaml'
       - '**/*.yml'
@@ -42,6 +44,11 @@ jobs:
       - name: install tools
         run: npm install -g prettier
 
+      # 拉取 resunne/sing-box-rules 的 baowu / sun-direct / sun-proxy 规则，
+      # 转换成 mihomo 规则并写入 Script/mihomoScript.js 的生成区块
+      - name: generate sing-box rules
+        run: node Tools/generate-singbox-rules.js
+
       - name: format files
         run: |
           git ls-files -z '*.js' '*.yml' '*.yaml' | xargs -0 -r prettier --write
@@ -56,7 +63,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "no changes to commit"
           else
-            git commit -m "chore: auto format"
+            git commit -m "chore: auto format & sync sing-box rules"
             git push
           fi
 
@@ -80,6 +87,14 @@ jobs:
 
       - name: install dependencies
         run: npm --prefix Test install
+
+      # 校验生成区块是否与上游一致（不一致只告警，避免上游更新直接卡住 PR）
+      - name: check sing-box rules freshness
+        continue-on-error: true
+        run: |
+          if ! node Tools/generate-singbox-rules.js --check; then
+            echo "::warning::Script/mihomoScript.js 的 sing-box-rules 生成区块与上游不一致，重新运行 generate 步骤即可"
+          fi
 
       - name: run tests
         run: node Test/run-tests.js

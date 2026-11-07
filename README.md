@@ -18,6 +18,8 @@
 - 🔧 **私有 DNS 自动处理**：自动处理机场私有 DNS 与节点域名 hosts 映射，无需手动修改
 - 🪜 **高级代理功能**：支持自定义节点、链式代理、IPv4 / IPv6 优先及国外 QUIC 屏蔽
 - 📱 **适配 [Bettbox](https://github.com/appshubcc/Bettbox) 图形化配置**：可直接在图形界面中开关策略组和功能选项，无需手动修改代码
+- 🔄 **自定义规则自动同步**：CI 从 [sing-box-rules](https://github.com/resunne/sing-box-rules) 拉取 `baowu` /
+  `sun-direct` / `sun-proxy` 规则，自动生成并内联到全量版脚本（详见 [AGENT.md §10](/AGENT.md)）
 
 ## 版本选择
 

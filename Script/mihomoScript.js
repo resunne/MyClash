@@ -79,6 +79,25 @@ const prefixRules = [
   'DOMAIN-SUFFIX,ctaiot.com,直连',
 ];
 
+// ===== BEGIN GENERATED: sing-box-rules =====
+// 由 Tools/generate-singbox-rules.js 生成，请勿手动修改。
+// 数据源：https://github.com/resunne/sing-box-rules（baowu / sun-direct / sun-proxy）
+const singBoxRuleSets = {
+  baowu: [
+    'DOMAIN-SUFFIX,baowuresources.info,直连',
+    'DOMAIN-SUFFIX,baocloud.cn,直连',
+    'DOMAIN-SUFFIX,baowugroup.cn,直连',
+    'DOMAIN-SUFFIX,baosight.com,直连',
+  ],
+  'sun-direct': ['DOMAIN,199998.xyz,直连'],
+  'sun-proxy': ['DOMAIN,hmoe.top,默认代理'],
+};
+
+// 直连侧 / 代理侧规则（按数据源拆分，供 main() 插入规则链）
+const singBoxDirectRules = [...singBoxRuleSets.baowu, ...singBoxRuleSets['sun-direct']];
+const singBoxProxyRules = [...singBoxRuleSets['sun-proxy']];
+// ===== END GENERATED: sing-box-rules
+
 // 此处添加自定义节点，填入下方[]内（可选，留空则不生成“自建节点”策略组）
 // 自定义节点不参与节点过滤与 hosts 改写；与订阅节点（标准化后）重名时自动添加“自建-”前缀
 // 示例：
@@ -1941,8 +1960,12 @@ function main(config) {
 
   newConfig['rules'] = [
     ...prefixRules,
+    // sing-box-rules 生成规则：baowu / sun-direct → 直连
+    ...singBoxDirectRules,
     ...(ruleOptionsEnable.屏蔽代理QUIC流量 ? blockForeignQuic : []),
     ...functionalRules,
+    // sing-box-rules 生成规则：sun-proxy → 默认代理
+    ...singBoxProxyRules,
     'RULE-SET,geolocation-!cn,默认代理',
     ...functionalIpRules,
 
