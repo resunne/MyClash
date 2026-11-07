@@ -202,17 +202,33 @@ function upsertBlock(source, block) {
       `目标脚本缺少生成标记（${BEGIN_MARKER} … ${END_MARKER}），请先在 Script/mihomoScript.js 中补齐空区块`,
     );
   }
+  const eol = detectEol(source);
   const endLineEnd = source.indexOf('\n', endAt);
   const tail = endLineEnd === -1 ? '' : source.slice(endLineEnd + 1);
-  return source.slice(0, beginAt) + block + '\n' + tail;
+  return source.slice(0, beginAt) + toEol(block, eol) + eol + tail;
 }
 
-/** 取脚本里的当前生成区块（用于 --check 与测试） */
+/** 取脚本里的当前生成区块（用于 --check 与测试）；行尾统一归一为 \n，避免 CRLF/LF 误报 */
 function extractBlock(source) {
   const beginAt = source.indexOf(BEGIN_MARKER);
   const endAt = source.indexOf(END_MARKER);
   if (beginAt === -1 || endAt === -1 || endAt < beginAt) return null;
-  return source.slice(beginAt, endAt + END_MARKER.length);
+  return normalizeBlock(source.slice(beginAt, endAt + END_MARKER.length));
+}
+
+/** 检测文本的换行风格：出现 CRLF 即视为 CRLF 文件 */
+function detectEol(text) {
+  return text.includes('\r\n') ? '\r\n' : '\n';
+}
+
+/** 把统一用 \n 拼好的文本转成目标行尾风格 */
+function toEol(text, eol) {
+  return eol === '\n' ? text : text.replace(/\n/g, eol);
+}
+
+/** 比对生成区块时忽略行尾差异（Windows 检出为 CRLF，CI 为 LF） */
+function normalizeBlock(text) {
+  return text == null ? null : text.replace(/\r\n/g, '\n');
 }
 
 function fetchText(url, redirects = 0) {
