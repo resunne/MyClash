@@ -404,6 +404,30 @@ const baseGroups = [
 
 // 定义分流策略组配置
 const serviceConfigs = [
+  // --- sing-box-rules 分流策略配置（排在最前：紧跟「默认代理」之后，规则内容由生成器注入） ---
+  {
+    name: 'Sun代理',
+    baseOption: selectBaseOption,
+    icon: `${singBoxIconBaseUrl}proxy.svg`,
+    rules: singBoxRuleSets['sun-proxy'],
+  },
+  {
+    name: 'Sun直连',
+    baseOption: selectBaseOption,
+    direct: true,
+    defaultSelected: '直连',
+    icon: `${singBoxIconBaseUrl}direct.svg`,
+    rules: singBoxRuleSets['sun-direct'],
+  },
+  {
+    name: '宝武',
+    baseOption: selectBaseOption,
+    direct: true,
+    defaultSelected: '直连',
+    icon: `${singBoxIconBaseUrl}baowu.svg`,
+    rules: singBoxRuleSets.baowu,
+  },
+
   ...baseGroups,
   {
     name: 'FCM',
@@ -808,30 +832,6 @@ const serviceConfigs = [
     },
     icon: `${iconBaseUrl}AdBlock.svg`,
     rules: ['RULE-SET,category-ads,AdBlock'],
-  },
-
-  // --- sing-box-rules 分流策略配置（与 FCM / YouTube / Microsoft 等同级，规则内容由生成器注入） ---
-  {
-    name: '宝武',
-    baseOption: selectBaseOption,
-    direct: true,
-    defaultSelected: '直连',
-    icon: `${singBoxIconBaseUrl}baowu.svg`,
-    rules: singBoxRuleSets.baowu,
-  },
-  {
-    name: 'Sun直连',
-    baseOption: selectBaseOption,
-    direct: true,
-    defaultSelected: '直连',
-    icon: `${singBoxIconBaseUrl}direct.svg`,
-    rules: singBoxRuleSets['sun-direct'],
-  },
-  {
-    name: 'Sun代理',
-    baseOption: selectBaseOption,
-    icon: `${singBoxIconBaseUrl}proxy.svg`,
-    rules: singBoxRuleSets['sun-proxy'],
   },
 ];
 

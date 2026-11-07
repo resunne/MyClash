@@ -881,10 +881,12 @@ Start-Process -FilePath "<python.exe>" -ArgumentList '-m','http.server','8765','
 - **生成区块**：`Script/mihomoScript.js` 里 `// ===== BEGIN GENERATED: sing-box-rules =====` 到
   `// ===== END GENERATED: sing-box-rules =====` 之间，只有 `singBoxRuleSets` 一个对象（按源分组，规则已带各自策略组名）。
   **这段永远由生成器重写，不要手改**；要改规则请改源仓库，要改映射请改 `FIELD_CONVERTERS`。
-- **接入方式**：三个策略组定义在 `serviceConfigs` 末尾，`rules` 直接引用 `singBoxRuleSets.<源名>`，因此**完全复用**
-  现有分流组机制 —— 规则顺序、`ruleOptionsEnable` 开关、`Compatible_With_Bettbox.policyGroupOptions`、极简模式
-  （`functionalRules` 为空）、`分流组添加所有节点` 等行为都自动一致，`main()` 里**没有**任何 sing-box 专用代码。
-  规则最终落在 `functionalRules` 段（`prefixRules` 与 `RULE-SET,geolocation-!cn` 之间，早于 `MATCH`）。
+- **接入方式**：三个策略组定义在 `serviceConfigs` **开头**（`...baseGroups` 之前），因此最终 `proxy-groups` 与 GLOBAL
+  成员里它们都紧跟「默认代理」之后（2026-11-07 用户指定此排序，回归断言见 `Test/suites/generator.js`）；
+  `rules` 直接引用 `singBoxRuleSets.<源名>`，因此**完全复用**现有分流组机制 —— 规则顺序、`ruleOptionsEnable` 开关、
+  `Compatible_With_Bettbox.policyGroupOptions`、极简模式（`functionalRules` 为空）、`分流组添加所有节点` 等行为都自动一致，
+  `main()` 里**没有**任何 sing-box 专用代码。规则最终落在 `functionalRules` 段（`prefixRules` 与
+  `RULE-SET,geolocation-!cn` 之间，早于 `MATCH`）；因为定义在最前，规则仅次于 AdBlock 的 REJECT 规则。
 - **字段映射**：`domain`→`DOMAIN`、`domain_suffix`→`DOMAIN-SUFFIX`（去前导点、小写）、`domain_keyword`→`DOMAIN-KEYWORD`、
   `domain_regex`→`DOMAIN-REGEX`、`ip_cidr`→`IP-CIDR,…no-resolve`、`source_ip_cidr`→`SRC-IP-CIDR`、`process_name`→
   `PROCESS-NAME`、`port`→`DST-PORT`、`network`→`NETWORK`。**遇到无法表达为 mihomo 规则的字段（如 `invert` / `query_type`）
