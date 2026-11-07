@@ -5,9 +5,12 @@
  * 把 sing-box-rules 仓库的规则 JSON 转换成 mihomo 规则，并写入 Script/mihomoScript.js 的生成区块。
  *
  * 数据源：https://github.com/resunne/sing-box-rules 的
- *   baowu.json → 直连
- *   sun-direct.json → 直连
- *   sun-proxy.json → 默认代理
+ *   baowu.json      → 分流策略组「宝武」（直连侧）
+ *   sun-direct.json → 分流策略组「Sun直连」（直连侧）
+ *   sun-proxy.json  → 分流策略组「Sun代理」
+ *
+ * 三个策略组在脚本的 serviceConfigs 里与 FCM / YouTube / Microsoft 等同级，
+ * 由 ruleOptionsEnable 的开关单独控制；本脚本只负责生成它们各自的规则数组。
  *
  * 用法：
  *   node Tools/generate-singbox-rules.js                       # 从 GitHub raw 拉取，写回脚本
@@ -32,11 +35,16 @@ const DEFAULT_SOURCE_BASE = 'https://raw.githubusercontent.com/resunne/sing-box-
 const BEGIN_MARKER = '// ===== BEGIN GENERATED: sing-box-rules';
 const END_MARKER = '// ===== END GENERATED: sing-box-rules';
 
-/** 数据源清单：name 同时用作脚本里 singBoxRuleSets 的键名 */
+/**
+ * 数据源清单：
+ * - name  → 脚本里 singBoxRuleSets 的键名
+ * - file  → 上游 sing-box-rules 仓库里的文件名
+ * - group → 对应的分流策略组名（同时也是规则里的目标策略）
+ */
 const SOURCES = [
-  { name: 'baowu', file: 'baowu.json', policy: '直连' },
-  { name: 'sun-direct', file: 'sun-direct.json', policy: '直连' },
-  { name: 'sun-proxy', file: 'sun-proxy.json', policy: '默认代理' },
+  { name: 'baowu', file: 'baowu.json', group: '宝武' },
+  { name: 'sun-direct', file: 'sun-direct.json', group: 'Sun直连' },
+  { name: 'sun-proxy', file: 'sun-proxy.json', group: 'Sun代理' },
 ];
 
 const SUPPORTED_KEYS = [
@@ -159,6 +167,7 @@ function buildBlock(ruleSets) {
     `${BEGIN_MARKER} =====`,
     '// 由 Tools/generate-singbox-rules.js 生成，请勿手动修改。',
     '// 数据源：https://github.com/resunne/sing-box-rules（baowu / sun-direct / sun-proxy）',
+    '// 三组规则分别对应 serviceConfigs 里的「宝武」「Sun直连」「Sun代理」分流策略组。',
     'const singBoxRuleSets = {',
   ];
 
@@ -179,10 +188,6 @@ function buildBlock(ruleSets) {
   }
 
   lines.push('};');
-  lines.push('');
-  lines.push('// 直连侧 / 代理侧规则（按数据源拆分，供 main() 插入规则链）');
-  lines.push(`const singBoxDirectRules = [...singBoxRuleSets.baowu, ...singBoxRuleSets['sun-direct']];`);
-  lines.push(`const singBoxProxyRules = [...singBoxRuleSets['sun-proxy']];`);
   lines.push(END_MARKER);
 
   return lines.join('\n');
@@ -283,8 +288,8 @@ async function run(argv = process.argv.slice(2)) {
     } catch (err) {
       throw new Error(`[${source.file}] JSON 解析失败：${err.message}`);
     }
-    ruleSets[source.name] = convertRuleSet(json, source.policy, source.file);
-    console.log(`  ${source.file} → ${ruleSets[source.name].length} 条规则（${source.policy}）`);
+    ruleSets[source.name] = convertRuleSet(json, source.group, source.file);
+    console.log(`  ${source.file} → ${ruleSets[source.name].length} 条规则（分流组：${source.group}）`);
   }
 
   const block = buildBlock(ruleSets);
