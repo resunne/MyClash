@@ -46,6 +46,11 @@ const ruleOptionsEnable = {
   EHentai: true, // E-Hentai网站
   AdBlock: true, // 广告拦截
 
+  // 以下为 sing-box-rules 分流策略配置
+  宝武: true, // 宝武集团相关域名（sing-box-rules: baowu）
+  Sun直连: true, // 自用直连域名（sing-box-rules: sun-direct）
+  Sun代理: true, // 自用代理域名（sing-box-rules: sun-proxy）
+
   // 以下为非分流策略配置
   极简国内外分流模式: false, // 是否启用极简国内外分流模式
   生成地区自动选择组: true, // 是否生成地区自动选择策略组
@@ -82,20 +87,17 @@ const prefixRules = [
 // ===== BEGIN GENERATED: sing-box-rules =====
 // 由 Tools/generate-singbox-rules.js 生成，请勿手动修改。
 // 数据源：https://github.com/resunne/sing-box-rules（baowu / sun-direct / sun-proxy）
+// 三组规则分别对应 serviceConfigs 里的「宝武」「Sun直连」「Sun代理」分流策略组。
 const singBoxRuleSets = {
   baowu: [
-    'DOMAIN-SUFFIX,baowuresources.info,直连',
-    'DOMAIN-SUFFIX,baocloud.cn,直连',
-    'DOMAIN-SUFFIX,baowugroup.cn,直连',
-    'DOMAIN-SUFFIX,baosight.com,直连',
+    'DOMAIN-SUFFIX,baowuresources.info,宝武',
+    'DOMAIN-SUFFIX,baocloud.cn,宝武',
+    'DOMAIN-SUFFIX,baowugroup.cn,宝武',
+    'DOMAIN-SUFFIX,baosight.com,宝武',
   ],
-  'sun-direct': ['DOMAIN,199998.xyz,直连'],
-  'sun-proxy': ['DOMAIN,hmoe.top,默认代理'],
+  'sun-direct': ['DOMAIN,199998.xyz,Sun直连'],
+  'sun-proxy': ['DOMAIN,hmoe.top,Sun代理'],
 };
-
-// 直连侧 / 代理侧规则（按数据源拆分，供 main() 插入规则链）
-const singBoxDirectRules = [...singBoxRuleSets.baowu, ...singBoxRuleSets['sun-direct']];
-const singBoxProxyRules = [...singBoxRuleSets['sun-proxy']];
 // ===== END GENERATED: sing-box-rules
 
 // 此处添加自定义节点，填入下方[]内（可选，留空则不生成“自建节点”策略组）
@@ -163,6 +165,9 @@ const directProxies = [
 
 // 图标 URL 公共前缀
 const iconBaseUrl = 'https://fastly.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/';
+
+// sing-box-rules 分流组图标前缀（图标单独放在 Icons/sing-box-rules/svg/，不并入 main 图标集）
+const singBoxIconBaseUrl = 'https://github.com/resunne/MyClash/raw/refs/heads/main/Icons/sing-box-rules/svg/';
 
 // 规则集 URL 公共前缀
 const ruleSetBaseUrl = 'https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/';
@@ -803,6 +808,30 @@ const serviceConfigs = [
     },
     icon: `${iconBaseUrl}AdBlock.svg`,
     rules: ['RULE-SET,category-ads,AdBlock'],
+  },
+
+  // --- sing-box-rules 分流策略配置（与 FCM / YouTube / Microsoft 等同级，规则内容由生成器注入） ---
+  {
+    name: '宝武',
+    baseOption: selectBaseOption,
+    direct: true,
+    defaultSelected: '直连',
+    icon: `${singBoxIconBaseUrl}baowu.svg`,
+    rules: singBoxRuleSets.baowu,
+  },
+  {
+    name: 'Sun直连',
+    baseOption: selectBaseOption,
+    direct: true,
+    defaultSelected: '直连',
+    icon: `${singBoxIconBaseUrl}direct.svg`,
+    rules: singBoxRuleSets['sun-direct'],
+  },
+  {
+    name: 'Sun代理',
+    baseOption: selectBaseOption,
+    icon: `${singBoxIconBaseUrl}proxy.svg`,
+    rules: singBoxRuleSets['sun-proxy'],
   },
 ];
 
@@ -1960,12 +1989,8 @@ function main(config) {
 
   newConfig['rules'] = [
     ...prefixRules,
-    // sing-box-rules 生成规则：baowu / sun-direct → 直连
-    ...singBoxDirectRules,
     ...(ruleOptionsEnable.屏蔽代理QUIC流量 ? blockForeignQuic : []),
     ...functionalRules,
-    // sing-box-rules 生成规则：sun-proxy → 默认代理
-    ...singBoxProxyRules,
     'RULE-SET,geolocation-!cn,默认代理',
     ...functionalIpRules,
 
