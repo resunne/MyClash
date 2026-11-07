@@ -53,7 +53,7 @@ const SUPPORTED_KEYS = [
 
 /** 单引号 JS 字符串字面量 */
 function quote(value) {
-  return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}'`;
+  return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
 }
 
 /** 对象键：合法标识符不加引号（与 prettier 保持一致） */
