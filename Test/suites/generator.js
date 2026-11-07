@@ -136,18 +136,18 @@ function runGeneratorTests(h, api, fx) {
     }
   });
 
-  h.test('策略组顺序：宝武 / Sun直连 / Sun代理 紧跟「默认代理」之后', () => {
+  h.test('策略组顺序：Sun代理 / Sun直连 / 宝武 紧跟「默认代理」之后', () => {
     const out = api.main(fx.minimalSubscription());
     const names = out['proxy-groups'].map((g) => g.name);
     const defIdx = names.indexOf('默认代理');
     h.assert(defIdx !== -1, '应存在「默认代理」组');
-    h.assertDeep(names.slice(defIdx + 1, defIdx + 4), ['宝武', 'Sun直连', 'Sun代理'], '三个分流组应紧跟「默认代理」');
+    h.assertDeep(names.slice(defIdx + 1, defIdx + 4), ['Sun代理', 'Sun直连', '宝武'], '三个分流组应紧跟「默认代理」');
     // GLOBAL 成员顺序与 proxy-groups 顺序一致
     const global = out['proxy-groups'].find((g) => g.name === 'GLOBAL');
     const gDefIdx = global.proxies.indexOf('默认代理');
     h.assertDeep(
       global.proxies.slice(gDefIdx + 1, gDefIdx + 4),
-      ['宝武', 'Sun直连', 'Sun代理'],
+      ['Sun代理', 'Sun直连', '宝武'],
       'GLOBAL 中三个分流组也应紧跟「默认代理」',
     );
   });

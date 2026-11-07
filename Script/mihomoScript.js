@@ -406,12 +406,10 @@ const baseGroups = [
 const serviceConfigs = [
   // --- sing-box-rules 分流策略配置（排在最前：紧跟「默认代理」之后，规则内容由生成器注入） ---
   {
-    name: '宝武',
+    name: 'Sun代理',
     baseOption: selectBaseOption,
-    direct: true,
-    defaultSelected: '直连',
-    icon: `${singBoxIconBaseUrl}baowu.svg`,
-    rules: singBoxRuleSets.baowu,
+    icon: `${singBoxIconBaseUrl}proxy.svg`,
+    rules: singBoxRuleSets['sun-proxy'],
   },
   {
     name: 'Sun直连',
@@ -422,10 +420,12 @@ const serviceConfigs = [
     rules: singBoxRuleSets['sun-direct'],
   },
   {
-    name: 'Sun代理',
+    name: '宝武',
     baseOption: selectBaseOption,
-    icon: `${singBoxIconBaseUrl}proxy.svg`,
-    rules: singBoxRuleSets['sun-proxy'],
+    direct: true,
+    defaultSelected: '直连',
+    icon: `${singBoxIconBaseUrl}baowu.svg`,
+    rules: singBoxRuleSets.baowu,
   },
 
   ...baseGroups,
